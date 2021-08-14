@@ -73,3 +73,16 @@ def color_font(sting):
     else:
         color = '808080'
     return color
+
+
+def skip_tabs(tab ,tabdelim):
+    
+    tabdelim_split = tabdelim.split(',')
+    
+    for tabs in tabdelim_split:
+        if str(tab).strip() == str(tabs.strip()):
+            return False
+        else:
+            continue
+    
+    return True 

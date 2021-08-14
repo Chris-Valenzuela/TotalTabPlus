@@ -3,6 +3,10 @@ import re
 from styles import bough
 from datetime import datetime
 
+# =============================================================================
+# Initialize filenames, Globals, TotalTabsDictionary
+# =============================================================================
+
 
 name = 'R201857 ALL UNW Banner1'
 filename = 'datasets/' + name + '.xlsx'
@@ -28,66 +32,84 @@ TotalTabsDictionary['Banner'] = []
 TotalTabsDictionary['BannerLetter'] = []
 
 
-# # ================ First Table and grabbing the STAT Testing =======================
-# statsdf = pd.read_excel(filename, sheet_name = 'T1')
-# statsdf = statsdf.loc[4:].copy()
-# stattest = []
-# for statistics in statsdf['Unnamed: 0']:
-#         if str(statistics).find('Statistics:') != -1:
-#             stattest = statistics.split(":")[3].split(",")[:-1]
-# #===================================================================================
-
-
-
-
 
 def aggr(xls):
 
-    # ================ Looping through each Table and grabbing Table Link =======================
+    # =========================================================================
+    # Looping through each Table and grabbing Table Link
+    # Adding Dict to key "TableLink". Where key = "Table Number"
+    # =========================================================================
     for indexsheet in xls.sheet_names[0:1]:
         df = pd.read_excel(filename, sheet_name = indexsheet)
         df = df.loc[4:].copy()
         for o, links in enumerate(df['Client: ']):
             o += 1
 
-            # TODO 
-            if str(o) != '56' and str(o) != '113' and str(o) != '114' and str(o) != '126' and str(o) != '127' and str(o) != '158' and str(o) != '159' and str(o) != '187' and str(o) != '188' and str(o) != '189' and str(o) != '190' and str(o) != '203' and str(o) != '204' and str(o) != '205' and str(o) != '206':
+            # =================================================================
+            # skipping these tables because they have numerics/duplicate rows
+            # using "skip_tabs" function in bough file 
+            # =================================================================
+            if bough.skip_tabs(o, '56, 113, 114, 126, 127, 158, 159, 187, 188, 189, 190, 203, 204, 205, 206'):
                 TotalTabsDictionary['TableLink'][o] = links
-    #==============================================================================================
+    
 
 
-
-    # =================== Looping through each table and initializing TotalTabsDictionary ================
+    # =========================================================================
+    # Looping through each table and initializing TotalTabsDictionary per tab
+    # =========================================================================
     for i, sheet_name in enumerate(xls.sheet_names[firstworksheet:lastworksheet]):
 
+        # =====================================================================
+        # each sheet = df
+        # returns two arrays: Banner and Letter representing each banner
+        # TODO what if there is no letter below the banner?
+        # TODO might be better to make a dict of arrays so each tab has 
+        # its own stat test ?
+        # =====================================================================
         df = pd.read_excel(filename, sheet_name = sheet_name)
         TotalTabsDictionary['Banner'], TotalTabsDictionary['BannerLetter'] = bough.rowaggregator(df, start)
 
-        ''' Table - search for a number in the worksheet if it exists then add that to the array of TotalTabsDict '''
+        # =====================================================================
+        # TableNumber - search for a number in the worksheet if it exists 
+        # then we consider it a table
+        # =====================================================================
         TableNumber = re.search(r"\d", sheet_name)
-        # if TableNumber:
-        # TODO 
-        if TableNumber and str(sheet_name) != 'T56' and str(sheet_name) != 'T113' and str(sheet_name) != 'T114' and str(sheet_name) != 'T126' and str(sheet_name) != 'T127' and str(sheet_name) != 'T158' and str(sheet_name) != 'T159' and str(sheet_name) != 'T187' and str(sheet_name) != 'T188' and str(sheet_name) != 'T189' and str(sheet_name) != 'T190' and str(sheet_name) != 'T203' and str(sheet_name) != 'T204' and str(sheet_name) != 'T205' and str(sheet_name) != 'T206':
+        if TableNumber and bough.skip_tabs(sheet_name, 'T56, T113, T114, T126, T127, T158, T159, T187, T188, T189, T190, T203, T204, T205, T206'):
             
-            #TableNumber initialize
+            # =================================================================
+            # TableNumber - initialize, each table gets key, value
+            # =================================================================
             TableNumber = sheet_name[TableNumber.start():]        
             TotalTabsDictionary['Table'][str(TableNumber)] = TableNumber
 
             sheetdf = df.copy()
         
-            # Question initialize
+            # =================================================================
+            # Question - initialize, each Question gets key = table number, 
+            # value = Question name 
+            # =================================================================
             title = sheetdf.loc[1][0]
             title = title.split(" ")[0]
             TotalTabsDictionary['Question'][str(TableNumber)] = title
         
-        
-            # grab the first column and drop all the na so we can loop through the stubs only
+            # =================================================================
+            # Grab first col, drop all NaN. To loop through stubs only 
+            # TODO we might be able to simplify this
+            # =================================================================
             columnsheetdf = sheetdf['Unnamed: 0'].copy().dropna(how='all')
             totalrowcount = len(columnsheetdf.index)
             
-            # Stub intialize
+            
+            # =================================================================
+            # Initialize 'Stub'. Each table gets its own array of stub names
+            # =================================================================
             TotalTabsDictionary['Stub'][str(TableNumber)] = []
             for j, row in enumerate(columnsheetdf):
+                
+                # =============================================================
+                # pinpointing what row stub we want then appending to an array
+                # TotalTabsDictionary['Stub']['TableNumber'] = []
+                # =============================================================
                 if j > start - 1 and j < totalrowcount - end:
                     TotalTabsDictionary['Stub'][str(TableNumber)].append(row)
             
